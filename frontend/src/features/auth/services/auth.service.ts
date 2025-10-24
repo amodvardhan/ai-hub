@@ -1,96 +1,144 @@
 /**
  * Authentication service
- * Handles all authentication-related API calls
+ * Supports multiple auth providers (Local, Azure AD, Mock Azure AD)
  */
 import { BaseService } from '@services/base.service';
-import { axiosInstance } from '@core/config/axios.config';
 import { LoginRequest, RegisterRequest, AuthResponse } from '../types/auth.types';
-import { ApiResponse } from '@core/types';
+import { authConfig, AuthProvider } from '@core/config/auth.config';
+import { azureADService } from './azure-ad.service';
+import { mockAzureADService } from './mock-azure-ad.service';
+import { mockAuthService } from './mock-auth.service';
+import { axiosInstance } from '@core/config/axios.config';
 
-/**
- * Authentication service class
- */
-class AuthService extends BaseService<AuthResponse> {
+class AuthService extends BaseService<any> {
     constructor() {
         super('/auth');
     }
 
     /**
-     * Authenticates a user
-     * @param credentials - Login credentials
-     * @returns Promise with authentication response
+     * Get the appropriate Azure AD service (real or mock)
+     */
+    private getAzureADService() {
+        return authConfig.useMockAzureAD ? mockAzureADService : azureADService;
+    }
+
+    /**
+     * Check if we should use mock auth
+     */
+    private shouldUseMock(): boolean {
+        return import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_AUTH === 'true';
+    }
+
+    /**
+     * Initialize authentication
+     */
+    async initialize(): Promise<void> {
+        if (authConfig.provider === AuthProvider.AZURE_AD) {
+            const azureService = this.getAzureADService();
+            await azureService.initialize();
+
+            if (authConfig.useMockAzureAD) {
+                console.log('✅ Mock Azure AD initialized (Development mode)');
+            } else {
+                console.log('✅ Real Azure AD initialized');
+            }
+        } else if (this.shouldUseMock()) {
+            console.log('✅ Mock auth initialized (Development mode)');
+        } else {
+            console.log('✅ Local auth initialized');
+        }
+    }
+
+    /**
+     * Login - supports Azure AD (real/mock), Mock, and Real API
      */
     async login(credentials: LoginRequest): Promise<AuthResponse> {
-        // MOCK LOGIN - Remove this when you have a real backend
-        if (credentials.email && credentials.password) {
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 500));
+        // Azure AD Login (real or mock)
+        if (authConfig.provider === AuthProvider.AZURE_AD) {
+            const azureService = this.getAzureADService();
+            const result = await azureService.loginWithPopup();
+            const token = await azureService.getAccessToken();
+            const userInfo = azureService.getUserInfo();
 
             return {
-                user: {
-                    id: '1',
-                    email: credentials.email,
-                    name: 'Demo User',
-                    roles: ['user', 'admin'],
-                },
-                accessToken: 'mock-access-token-' + Date.now(),
-                refreshToken: 'mock-refresh-token-' + Date.now(),
+                user: userInfo,
+                accessToken: token,
+                refreshToken: '', // Azure AD handles token refresh
             };
         }
 
-        throw new Error('Invalid credentials');
+        // Mock Login (Development)
+        if (this.shouldUseMock()) {
+            return mockAuthService.login(credentials);
+        }
 
-        // REAL API CALL - Uncomment when backend is ready
-        // const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
-        //   `${this.endpoint}/login`,
-        //   credentials
-        // );
-        // return response.data.data;
+        // Real API Login
+        const response = await axiosInstance.post(`${this.endpoint}/login`, credentials);
+        return response.data.data;
     }
 
     /**
-     * Registers a new user
-     * @param data - Registration data
-     * @returns Promise with authentication response
+     * Register - only for local/mock auth
      */
     async register(data: RegisterRequest): Promise<AuthResponse> {
-        // MOCK REGISTER - Remove this when you have a real backend
-        if (data.email && data.password && data.name) {
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            return {
-                user: {
-                    id: '2',
-                    email: data.email,
-                    name: data.name,
-                    roles: ['user'],
-                },
-                accessToken: 'mock-access-token-' + Date.now(),
-                refreshToken: 'mock-refresh-token-' + Date.now(),
-            };
+        if (authConfig.provider === AuthProvider.AZURE_AD) {
+            throw new Error('Registration not supported with Azure AD');
         }
 
-        throw new Error('Registration failed');
+        // Mock Register (Development)
+        if (this.shouldUseMock()) {
+            return mockAuthService.register(data);
+        }
 
-        // REAL API CALL - Uncomment when backend is ready
-        // const response = await axiosInstance.post<ApiResponse<AuthResponse>>(
-        //   `${this.endpoint}/register`,
-        //   data
-        // );
-        // return response.data.data;
+        // Real API Register
+        const response = await axiosInstance.post(`${this.endpoint}/register`, data);
+        return response.data.data;
     }
 
     /**
-     * Refreshes the access token
-     * @param refreshToken - Refresh token
-     * @returns Promise with new tokens
+     * Logout
      */
-    async refreshToken(refreshToken: string): Promise<{ accessToken: string }> {
-        const response = await axiosInstance.post<ApiResponse<{ accessToken: string }>>(
-            `${this.endpoint}/refresh`,
-            { refreshToken }
-        );
+    async logout(): Promise<void> {
+        if (authConfig.provider === AuthProvider.AZURE_AD) {
+            const azureService = this.getAzureADService();
+            await azureService.logout();
+            return;
+        }
+
+        if (this.shouldUseMock()) {
+            await mockAuthService.logout();
+            return;
+        }
+
+        // Real API Logout
+        await axiosInstance.post(`${this.endpoint}/logout`);
+    }
+
+    /**
+     * Check if user is authenticated
+     */
+    isAuthenticated(): boolean {
+        if (authConfig.provider === AuthProvider.AZURE_AD) {
+            const azureService = this.getAzureADService();
+            return azureService.isAuthenticated();
+        }
+        return false;
+    }
+
+    /**
+     * Get current user
+     */
+    async getCurrentUser(): Promise<any> {
+        if (authConfig.provider === AuthProvider.AZURE_AD) {
+            const azureService = this.getAzureADService();
+            return azureService.getUserInfo();
+        }
+
+        if (this.shouldUseMock()) {
+            return mockAuthService.getCurrentUser();
+        }
+
+        const response = await axiosInstance.get(`${this.endpoint}/me`);
         return response.data.data;
     }
 }

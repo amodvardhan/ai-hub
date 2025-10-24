@@ -6,9 +6,14 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './core/i18n/i18n.config';
+import { authService } from '@features/auth/services/auth.service';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
+// Initialize auth before rendering
+authService.initialize().then(() => {
+  const root = ReactDOM.createRoot(document.getElementById('root')!);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+});

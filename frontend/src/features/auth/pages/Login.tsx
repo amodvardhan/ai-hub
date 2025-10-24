@@ -1,129 +1,183 @@
 /**
- * Login page component with enhanced validation
- * Provides user authentication interface
+ * Login page component
+ * Supports local, mock, and Azure AD authentication
  */
-import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
-import {
-    Box,
-    Typography,
-    Link,
-    Paper,
-    Grid,
-    Container,
-    Alert,
-} from '@mui/material';
-import { useFormik } from 'formik';
-import * as Yup from 'yup';
-import { Button, TextField } from '@components/wrappers';
+import React, { useState } from 'react';
+import { Container, Box, Typography, Paper, Divider } from '@mui/material';
+import { Button, TextField, Alert } from '@components/wrappers';
 import { useAuth } from '../hooks/useAuth';
-import { useTranslation } from 'react-i18next';
-import { validateEmail } from '@utils/validators';
+import { authConfig, AuthProvider } from '@core/config/auth.config';
+import { Formik, Form } from 'formik';
+import * as Yup from 'yup';
+import MicrosoftIcon from '@mui/icons-material/Microsoft';
+import { useNavigate } from 'react-router-dom';
 
-/**
- * Validation schema for login form
- */
 const validationSchema = Yup.object({
-    email: Yup.string()
-        .email('Invalid email address')
-        .required('Email is required')
-        .test('valid-email', 'Invalid email format', (value) => {
-            return value ? validateEmail(value) : false;
-        }),
-    password: Yup.string()
-        .required('Password is required')
-        .min(3, 'Password must be at least 3 characters'),
+    email: Yup.string().email('Invalid email').required('Email is required'),
+    password: Yup.string().required('Password is required'),
 });
 
-/**
- * Login page component
- * @returns JSX Element
- */
 const Login: React.FC = () => {
-    const { t } = useTranslation('common');
-    const { login, isLoading } = useAuth();
+    const { login, loginWithAzureAD, isLoading } = useAuth();
+    const navigate = useNavigate();
+    const [error, setError] = useState('');
+    const useMockAuth = import.meta.env.VITE_USE_MOCK_AUTH === 'true';
+    const useMockAzureAD = authConfig.useMockAzureAD;
 
-    /**
-     * Formik form configuration
-     */
-    const formik = useFormik({
-        initialValues: {
-            email: '',
-            password: '',
-        },
-        validationSchema,
-        onSubmit: async (values) => {
-            await login(values);
-        },
+    console.log('🔍 Auth Config:', {
+        provider: authConfig.provider,
+        envProvider: import.meta.env.VITE_AUTH_PROVIDER,
+        isAzureAD: authConfig.provider === AuthProvider.AZURE_AD,
+        useMockAzureAD: authConfig.useMockAzureAD,
     });
 
+
+    const handleLocalLogin = async (values: any) => {
+        try {
+            setError('');
+            await login(values);
+        } catch (err: any) {
+            setError(err.message || 'Login failed');
+        }
+    };
+
+    const handleAzureLogin = async () => {
+        try {
+            setError('');
+            await loginWithAzureAD();
+        } catch (err: any) {
+            setError(err.message || 'Azure AD login failed');
+        }
+    };
+
+    // Show Azure AD login if provider is azure-ad
+    const showAzureADLogin = authConfig.provider === AuthProvider.AZURE_AD;
+
     return (
-        <Container component="main" maxWidth="xs">
-            <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-                <Typography component="h1" variant="h5" align="center" gutterBottom>
-                    Welcome Back
-                </Typography>
-                <Typography variant="body2" align="center" color="text.secondary" sx={{ mb: 3 }}>
-                    Sign in to continue
-                </Typography>
-
-                <Alert severity="info" sx={{ mb: 3 }}>
-                    <Typography variant="caption">
-                        <strong>Demo Mode:</strong> Use any email and password to login
+        <Container maxWidth="sm">
+            <Box sx={{ mt: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
+                    <Typography variant="h4" component="h1" gutterBottom align="center">
+                        Welcome Back
                     </Typography>
-                </Alert>
+                    <Typography variant="body2" color="text.secondary" align="center" paragraph>
+                        {showAzureADLogin
+                            ? useMockAzureAD
+                                ? 'Sign in with Mock Microsoft Account'
+                                : 'Sign in with your Microsoft account'
+                            : useMockAuth
+                                ? 'Sign in with demo credentials'
+                                : 'Sign in to your account'}
+                    </Typography>
 
-                <Box component="form" onSubmit={formik.handleSubmit}>
-                    <TextField
-                        margin="normal"
-                        fullWidth
-                        id="email"
-                        label="Email Address"
-                        name="email"
-                        autoComplete="email"
-                        autoFocus
-                        value={formik.values.email}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.email && Boolean(formik.errors.email)}
-                        helperText={formik.touched.email && formik.errors.email}
-                    />
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
 
-                    <TextField
-                        margin="normal"
-                        fullWidth
-                        name="password"
-                        label="Password"
-                        type="password"
-                        id="password"
-                        autoComplete="current-password"
-                        value={formik.values.password}
-                        onChange={formik.handleChange}
-                        onBlur={formik.handleBlur}
-                        error={formik.touched.password && Boolean(formik.errors.password)}
-                        helperText={formik.touched.password && formik.errors.password}
-                    />
+                    {/* Azure AD Login (Real or Mock) */}
+                    {showAzureADLogin ? (
+                        <Box>
+                            {useMockAzureAD && (
+                                <Alert severity="info" sx={{ mb: 2 }}>
+                                    <Typography variant="caption" component="div">
+                                        <strong>Mock Azure AD Mode</strong>
+                                    </Typography>
+                                    <Typography variant="caption">
+                                        This will simulate Azure AD login without requiring actual credentials.
+                                    </Typography>
+                                </Alert>
+                            )}
+                            <Button
+                                variant="contained"
+                                fullWidth
+                                startIcon={<MicrosoftIcon />}
+                                onClick={handleAzureLogin}
+                                loading={isLoading}
+                                size="large"
+                                sx={{
+                                    bgcolor: '#0078d4',
+                                    '&:hover': {
+                                        bgcolor: '#106ebe',
+                                    },
+                                }}
+                            >
+                                {useMockAzureAD ? 'Sign in with Mock Microsoft' : 'Sign in with Microsoft'}
+                            </Button>
+                        </Box>
+                    ) : (
+                        /* Local/Mock Login Form */
+                        <Box>
+                            {useMockAuth && (
+                                <Alert severity="info" sx={{ mb: 2 }}>
+                                    <Typography variant="caption" component="div">
+                                        <strong>Demo Accounts:</strong>
+                                    </Typography>
+                                    <Typography variant="caption" component="div">
+                                        Admin: admin@example.com / admin123
+                                    </Typography>
+                                    <Typography variant="caption" component="div">
+                                        User: user@example.com / user123
+                                    </Typography>
+                                    <Typography variant="caption" component="div" sx={{ mt: 0.5, fontStyle: 'italic' }}>
+                                        Or use any email with password (min 3 chars)
+                                    </Typography>
+                                </Alert>
+                            )}
 
-                    <Button
-                        type="submit"
-                        fullWidth
-                        variant="primary"
-                        loading={isLoading}
-                        disabled={!formik.isValid || isLoading}
-                        sx={{ mt: 3, mb: 2 }}
-                    >
-                        {t('actions.submit')}
-                    </Button>
+                            <Formik
+                                initialValues={{ email: '', password: '' }}
+                                validationSchema={validationSchema}
+                                onSubmit={handleLocalLogin}
+                            >
+                                {({ values, errors, touched, handleChange, handleBlur }) => (
+                                    <Form>
+                                        <TextField
+                                            fullWidth
+                                            name="email"
+                                            label="Email"
+                                            type="email"
+                                            value={values.email}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            error={touched.email && !!errors.email}
+                                            helperText={touched.email && errors.email}
+                                            sx={{ mb: 2 }}
+                                        />
+                                        <TextField
+                                            fullWidth
+                                            name="password"
+                                            label="Password"
+                                            type="password"
+                                            value={values.password}
+                                            onChange={handleChange}
+                                            onBlur={handleBlur}
+                                            error={touched.password && !!errors.password}
+                                            helperText={touched.password && errors.password}
+                                            sx={{ mb: 3 }}
+                                        />
+                                        <Button variant="primary" type="submit" fullWidth loading={isLoading}>
+                                            Sign In
+                                        </Button>
+                                    </Form>
+                                )}
+                            </Formik>
 
-                    <Grid container justifyContent="center">
-                        <Grid item>
-                            <Link component={RouterLink} to="/register" variant="body2">
-                                Don't have an account? Sign up
-                            </Link>
-                        </Grid>
-                    </Grid>
-                </Box>
-            </Paper>
+                            <Divider sx={{ my: 3 }}>OR</Divider>
+
+                            <Box sx={{ textAlign: 'center' }}>
+                                <Typography variant="body2" color="text.secondary">
+                                    Don't have an account?{' '}
+                                    <Button variant="text" onClick={() => navigate('/register')}>
+                                        Register
+                                    </Button>
+                                </Typography>
+                            </Box>
+                        </Box>
+                    )}
+                </Paper>
+            </Box>
         </Container>
     );
 };

@@ -1,75 +1,82 @@
 /**
  * Authentication hook
- * Provides authentication methods and state
+ * Supports multiple auth providers
  */
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '@store/auth.store';
 import { authService } from '../services/auth.service';
-import { LoginRequest, RegisterRequest } from '../types/auth.types';
+import { useAuthStore } from '@store/auth.store';
 import { useNotification } from '@hooks/useNotification';
-import { useTranslation } from 'react-i18next';
+import { LoginRequest, RegisterRequest } from '../types/auth.types';
+import { authConfig, AuthProvider } from '@core/config/auth.config';
 
-/**
- * Authentication hook return type
- */
-interface UseAuthReturn {
-    login: (credentials: LoginRequest) => Promise<unknown>;
-    register: (data: RegisterRequest) => Promise<unknown>;
-    logout: () => void;
-    isLoading: boolean;
-    isAuthenticated: boolean;
-}
-
-/**
- * Hook for authentication operations
- * @returns Authentication methods and state
- */
-export const useAuth = (): UseAuthReturn => {
+export const useAuth = () => {
     const navigate = useNavigate();
-    const { setAuth, clearAuth, isAuthenticated } = useAuthStore();
+    const { setAuth, clearAuth } = useAuthStore();
     const { showSuccess, showError } = useNotification();
-    const { t } = useTranslation('messages');
 
-    // Login mutation
+    // Local login
     const loginMutation = useMutation({
-        mutationFn: authService.login,
+        mutationFn: (credentials: LoginRequest) => authService.login(credentials),
         onSuccess: (response) => {
             setAuth(response.user, response.accessToken, response.refreshToken);
-            showSuccess(t('login.success'));
+            showSuccess('Login successful!');
             navigate('/dashboard');
         },
-        onError: (error: Error) => {
-            showError(error.message || t('login.error'));
+        onError: (error: any) => {
+            showError(error.message || 'Login failed');
         },
     });
 
-    // Register mutation
+    // Azure AD login
+    const azureLoginMutation = useMutation({
+        mutationFn: () => authService.login({} as LoginRequest), // Triggers Azure AD flow
+        onSuccess: (response) => {
+            setAuth(response.user, response.accessToken, response.refreshToken);
+            showSuccess('Signed in with Microsoft successfully!');
+            navigate('/dashboard');
+        },
+        onError: (error: any) => {
+            showError(error.message || 'Azure AD login failed');
+        },
+    });
+
+    // Register (local only)
     const registerMutation = useMutation({
-        mutationFn: authService.register,
+        mutationFn: (data: RegisterRequest) => authService.register(data),
+        onSuccess: (response) => {
+            setAuth(response.user, response.accessToken, response.refreshToken);
+            showSuccess('Registration successful!');
+            navigate('/dashboard');
+        },
+        onError: (error: any) => {
+            showError(error.message || 'Registration failed');
+        },
+    });
+
+    // Logout
+    const logoutMutation = useMutation({
+        mutationFn: () => authService.logout(),
         onSuccess: () => {
-            showSuccess(t('register.success'));
+            clearAuth();
+            showSuccess('Logged out successfully');
             navigate('/login');
         },
-        onError: (error: Error) => {
-            showError(error.message || t('register.error'));
+        onError: (error: any) => {
+            showError(error.message || 'Logout failed');
         },
     });
-
-    /**
-     * Logs out the current user
-     */
-    const logout = (): void => {
-        clearAuth();
-        showSuccess(t('logout.success'));
-        navigate('/login');
-    };
 
     return {
         login: loginMutation.mutateAsync,
+        loginWithAzureAD: azureLoginMutation.mutateAsync,
         register: registerMutation.mutateAsync,
-        logout,
-        isLoading: loginMutation.isPending || registerMutation.isPending,
-        isAuthenticated,
+        logout: logoutMutation.mutateAsync,
+        isLoading:
+            loginMutation.isPending ||
+            azureLoginMutation.isPending ||
+            registerMutation.isPending ||
+            logoutMutation.isPending,
+        isAzureAD: authConfig.provider === AuthProvider.AZURE_AD,
     };
 };
