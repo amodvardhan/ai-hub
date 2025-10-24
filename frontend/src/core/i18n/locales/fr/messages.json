@@ -1,0 +1,13 @@
+{
+    "login": {
+        "success": "Connexion réussie",
+        "error": "Échec de la connexion. Veuillez vérifier vos identifiants."
+    },
+    "register": {
+        "success": "Inscription réussie. Veuillez vous connecter.",
+        "error": "Échec de l'inscription. Veuillez réessayer."
+    },
+    "logout": {
+        "success": "Déconnexion réussie"
+    }
+}

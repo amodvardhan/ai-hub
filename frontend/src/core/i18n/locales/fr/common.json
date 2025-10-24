@@ -1,0 +1,22 @@
+{
+    "app": {
+        "title": "Application d'Entreprise",
+        "loading": "Chargement...",
+        "error": "Une erreur s'est produite"
+    },
+    "actions": {
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "delete": "Supprimer",
+        "edit": "Modifier",
+        "create": "Créer",
+        "submit": "Soumettre"
+    },
+    "navigation": {
+        "home": "Accueil",
+        "dashboard": "Tableau de bord",
+        "profile": "Profil",
+        "settings": "Paramètres",
+        "logout": "Déconnexion"
+    }
+}

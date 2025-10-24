@@ -1,0 +1,13 @@
+{
+    "login": {
+        "success": "Login successful",
+        "error": "Login failed. Please check your credentials."
+    },
+    "register": {
+        "success": "Registration successful. Please login.",
+        "error": "Registration failed. Please try again."
+    },
+    "logout": {
+        "success": "Logged out successfully"
+    }
+}
