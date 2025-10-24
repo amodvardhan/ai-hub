@@ -7,7 +7,6 @@ import { Outlet } from 'react-router-dom';
 import {
     Box,
     Container,
-    Paper,
     Typography,
     AppBar,
     Toolbar,
@@ -51,17 +50,6 @@ const AuthLayout: React.FC = () => {
         handleCloseLangMenu();
     };
 
-    /**
-     * Gets current language display name
-     */
-    const getCurrentLanguage = (): string => {
-        const languages: Record<string, string> = {
-            en: 'English',
-            es: 'Español',
-            fr: 'Français',
-        };
-        return languages[i18n.language] || 'English';
-    };
 
     return (
         <Box

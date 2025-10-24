@@ -3,7 +3,7 @@
  * Wraps Material-UI TextField with enterprise-specific defaults
  */
 import React from 'react';
-import { TextField as MuiTextField, FormHelperText, Box } from '@mui/material';
+import { TextField as MuiTextField, FormHelperText, Box, InputAdornment } from '@mui/material';
 import { CustomTextFieldProps } from './TextField.types';
 
 /**
@@ -17,9 +17,21 @@ export const TextField: React.FC<CustomTextFieldProps> = ({
     value = '',
     helperText,
     variant = 'outlined',
+    startAdornment,
+    endAdornment,
     ...rest
 }) => {
     const charCount = String(value).length;
+
+    const InputProps = {
+        ...rest.InputProps,
+        startAdornment: startAdornment ? (
+            <InputAdornment position="start">{startAdornment}</InputAdornment>
+        ) : rest.InputProps?.startAdornment,
+        endAdornment: endAdornment ? (
+            <InputAdornment position="end">{endAdornment}</InputAdornment>
+        ) : rest.InputProps?.endAdornment,
+    };
 
     return (
         <Box>
@@ -30,14 +42,15 @@ export const TextField: React.FC<CustomTextFieldProps> = ({
                     maxLength,
                     ...rest.inputProps,
                 }}
+                InputProps={InputProps}
                 {...rest}
+                helperText={helperText}
             />
             {showCharCount && maxLength && (
-                <FormHelperText>
+                <FormHelperText sx={{ textAlign: 'right' }}>
                     {charCount}/{maxLength} characters
                 </FormHelperText>
             )}
-            {helperText && <FormHelperText>{helperText}</FormHelperText>}
         </Box>
     );
 };

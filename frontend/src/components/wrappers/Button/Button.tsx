@@ -20,7 +20,6 @@ export const Button: React.FC<CustomButtonProps> = ({
     endIcon,
     ...rest
 }) => {
-    // Map custom variants to MUI variants
     const getMuiVariant = (): 'contained' | 'outlined' | 'text' => {
         switch (variant) {
             case 'primary':
@@ -31,10 +30,10 @@ export const Button: React.FC<CustomButtonProps> = ({
         }
     };
 
-    const getColor = (): 'primary' | 'secondary' | 'inherit' => {
+    const getColor = (): 'primary' | 'secondary' | 'inherit' | 'success' | 'error' | 'info' | 'warning' => {
         if (variant === 'primary') return 'primary';
         if (variant === 'secondary') return 'secondary';
-        return rest.color as 'primary' | 'secondary' | 'inherit' | undefined || 'primary';
+        return rest.color || 'primary';
     };
 
     return (
