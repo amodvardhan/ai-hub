@@ -17,6 +17,7 @@
         "dashboard": "Panel",
         "profile": "Perfil",
         "settings": "Configuración",
-        "logout": "Cerrar sesión"
+        "logout": "Logout",
+        "showcase": "Component Showcase"
     }
 }

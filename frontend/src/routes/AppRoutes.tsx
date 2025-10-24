@@ -18,6 +18,8 @@ const Profile = lazy(() => import('@features/profile/pages/Profile'));
 const Settings = lazy(() => import('@features/settings/pages/Settings'));
 const Unauthorized = lazy(() => import('@features/error/pages/Unauthorized'));
 const NotFound = lazy(() => import('@features/error/pages/NotFound'));
+const ComponentsShowcase = lazy(() => import('@features/showcase/pages/ComponentsShowcase'));
+
 
 /**
  * Application routes component
@@ -42,6 +44,7 @@ export const AppRoutes: React.FC = () => {
                             <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
                             <Route path={ROUTES.PROFILE} element={<Profile />} />
                             <Route path={ROUTES.SETTINGS} element={<Settings />} />
+                            <Route path={ROUTES.SHOWCASE} element={<ComponentsShowcase />} />
                         </Route>
                     </Route>
 

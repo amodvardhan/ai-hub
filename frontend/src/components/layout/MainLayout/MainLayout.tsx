@@ -32,6 +32,8 @@ import { useAuthStore } from '@store/auth.store';
 import { useAuth } from '@features/auth/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import { useThemeContext } from '@core/contexts';
+import { Code as CodeIcon } from '@mui/icons-material';
+
 
 /**
  * Main layout component
@@ -206,6 +208,12 @@ const MainLayout: React.FC = () => {
                                 open={Boolean(anchorElUser)}
                                 onClose={handleCloseUserMenu}
                             >
+                                <MenuItem onClick={() => { handleCloseUserMenu(); navigate('/showcase'); }}>
+                                    <ListItemIcon>
+                                        <CodeIcon fontSize="small" />
+                                    </ListItemIcon>
+                                    Component Showcase
+                                </MenuItem>
                                 <MenuItem disabled>
                                     <Typography textAlign="center" variant="body2" color="text.secondary">
                                         {user?.email}
