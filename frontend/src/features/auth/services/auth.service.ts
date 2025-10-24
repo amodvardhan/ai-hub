@@ -56,7 +56,7 @@ class AuthService extends BaseService<any> {
         // Azure AD Login (real or mock)
         if (authConfig.provider === AuthProvider.AZURE_AD) {
             const azureService = this.getAzureADService();
-            const result = await azureService.loginWithPopup();
+            await azureService.loginWithPopup();
             const token = await azureService.getAccessToken();
             const userInfo = azureService.getUserInfo();
 
@@ -76,6 +76,7 @@ class AuthService extends BaseService<any> {
         const response = await axiosInstance.post(`${this.endpoint}/login`, credentials);
         return response.data.data;
     }
+
 
     /**
      * Register - only for local/mock auth
