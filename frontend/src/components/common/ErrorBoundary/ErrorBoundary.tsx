@@ -1,111 +1,180 @@
 /**
- * Error Boundary component for catching and handling React errors
- * Provides fallback UI when component tree errors occur
+ * Enhanced Error Boundary Component
+ * Provides granular error isolation and elegant fallback UI
  */
 import { Component, ErrorInfo, ReactNode } from 'react';
-import { Box, Typography, Button, Container } from '@mui/material';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import { Box, Typography, Button, Paper, Alert } from '@mui/material';
+import { ErrorOutline as ErrorIcon, Refresh as RefreshIcon } from '@mui/icons-material';
 
-/**
- * Error boundary props
- */
-interface ErrorBoundaryProps {
+interface Props {
     children: ReactNode;
     fallback?: ReactNode;
     onError?: (error: Error, errorInfo: ErrorInfo) => void;
+    isolate?: boolean; // If true, only this component fails, not the whole page
+    componentName?: string; // For better error messages
+    showDetails?: boolean; // Show error details in dev mode
 }
 
-/**
- * Error boundary state
- */
-interface ErrorBoundaryState {
+interface State {
     hasError: boolean;
     error: Error | null;
+    errorInfo: ErrorInfo | null;
 }
 
 /**
- * Error Boundary class component
- * Catches JavaScript errors in child component tree
+ * Error Boundary Component
+ * Catches errors in child components and shows fallback UI
  */
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-    constructor(props: ErrorBoundaryProps) {
+export class ErrorBoundary extends Component<Props, State> {
+    constructor(props: Props) {
         super(props);
         this.state = {
             hasError: false,
             error: null,
+            errorInfo: null,
         };
     }
 
-    /**
-     * Updates state when an error is caught
-     * @param error - The error that was thrown
-     * @returns New state
-     */
-    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    static getDerivedStateFromError(error: Error): State {
         return {
             hasError: true,
             error,
+            errorInfo: null,
         };
     }
 
-    /**
-     * Logs error details and calls optional error handler
-     * @param error - The error that was thrown
-     * @param errorInfo - Additional error information
-     */
     componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-        console.error('ErrorBoundary caught an error:', error, errorInfo);
+        const { onError, componentName } = this.props;
 
-        if (this.props.onError) {
-            this.props.onError(error, errorInfo);
+        // Log error to console
+        console.error(
+            `❌ Error in ${componentName || 'Component'}:`,
+            error,
+            errorInfo
+        );
+
+        // Update state with error info
+        this.setState({
+            errorInfo,
+        });
+
+        // Call custom error handler if provided
+        if (onError) {
+            onError(error, errorInfo);
         }
+
+        // TODO: Send to error tracking service (Sentry, LogRocket, etc.)
+        // Example: Sentry.captureException(error);
     }
 
-    /**
-     * Resets error state
-     */
     handleReset = (): void => {
         this.setState({
             hasError: false,
             error: null,
+            errorInfo: null,
         });
     };
 
     render(): ReactNode {
-        if (this.state.hasError) {
-            if (this.props.fallback) {
-                return this.props.fallback;
+        const { hasError, error, errorInfo } = this.state;
+        const { children, fallback, isolate = false, componentName, showDetails = false } = this.props;
+
+        if (hasError) {
+            // Custom fallback UI provided
+            if (fallback) {
+                return fallback;
             }
 
+            // Default fallback UI - Compact for isolated errors
+            if (isolate) {
+                return (
+                    <Alert
+                        severity="error"
+                        action={
+                            <Button size="small" onClick={this.handleReset} startIcon={<RefreshIcon />}>
+                                Retry
+                            </Button>
+                        }
+                        sx={{ m: 2 }}
+                    >
+                        <Typography variant="subtitle2">
+                            {componentName ? `Error in ${componentName}` : 'Component Error'}
+                        </Typography>
+                        {showDetails && import.meta.env.DEV && (
+                            <Typography variant="caption" component="div" sx={{ mt: 1 }}>
+                                {error?.message}
+                            </Typography>
+                        )}
+                    </Alert>
+                );
+            }
+
+            // Full page error (for critical errors)
             return (
-                <Container maxWidth="sm">
-                    <Box
+                <Box
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        minHeight: '400px',
+                        p: 3,
+                    }}
+                >
+                    <Paper
+                        elevation={3}
                         sx={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minHeight: '50vh',
+                            p: 4,
+                            maxWidth: 600,
+                            width: '100%',
                             textAlign: 'center',
-                            gap: 2,
                         }}
                     >
-                        <ErrorOutlineIcon color="error" sx={{ fontSize: 64 }} />
-                        <Typography variant="h4" component="h1" gutterBottom>
+                        <ErrorIcon color="error" sx={{ fontSize: 60, mb: 2 }} />
+                        <Typography variant="h5" gutterBottom>
                             Oops! Something went wrong
                         </Typography>
-                        <Typography variant="body1" color="text.secondary" gutterBottom>
-                            {this.state.error?.message || 'An unexpected error occurred'}
+                        <Typography variant="body2" color="text.secondary" paragraph>
+                            {componentName
+                                ? `An error occurred in the ${componentName} component.`
+                                : 'An unexpected error occurred.'}
                         </Typography>
-                        <Button variant="contained" onClick={this.handleReset}>
-                            Try Again
-                        </Button>
-                    </Box>
-                </Container>
+
+                        {showDetails && import.meta.env.DEV && error && (
+                            <Box sx={{ mt: 3, textAlign: 'left' }}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    Error Details (Development Mode):
+                                </Typography>
+                                <Paper
+                                    sx={{
+                                        p: 2,
+                                        bgcolor: 'error.light',
+                                        color: 'error.contrastText',
+                                        maxHeight: 200,
+                                        overflow: 'auto',
+                                    }}
+                                >
+                                    <Typography variant="caption" component="pre" sx={{ margin: 0 }}>
+                                        {error.message}
+                                        {errorInfo && `\n\n${errorInfo.componentStack}`}
+                                    </Typography>
+                                </Paper>
+                            </Box>
+                        )}
+
+                        <Box sx={{ mt: 3, display: 'flex', gap: 2, justifyContent: 'center' }}>
+                            <Button variant="contained" onClick={this.handleReset} startIcon={<RefreshIcon />}>
+                                Try Again
+                            </Button>
+                            <Button variant="outlined" onClick={() => window.location.href = '/'}>
+                                Go to Home
+                            </Button>
+                        </Box>
+                    </Paper>
+                </Box>
             );
         }
 
-        return this.props.children;
+        return children;
     }
 }
 

@@ -7,6 +7,7 @@ import { Card, Alert } from '@components/wrappers';
 import { CodeBlock } from '@features/showcase/components';
 
 export const FolderStructureSection: React.FC = () => (
+
     <Box>
         <Typography variant="h4" gutterBottom>
             Folder Structure

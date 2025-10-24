@@ -24,6 +24,6 @@ module.exports = {
                 args: 'after-used',
                 argsIgnorePattern: '^_',
             },
-        ],
+        ]
     },
 };

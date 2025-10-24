@@ -29,6 +29,8 @@ import {
     Slider,
     IconButton,
     Badge,
+    DataGrid,
+    VirtualGrid
 } from '@components/wrappers';
 import {
     Add as AddIcon,
@@ -130,6 +132,82 @@ const ComponentsShowcase: React.FC = () => {
     const handleDialogConfirm = (): void => {
         showInfo('Dialog confirmed!');
         setDialogOpen(false);
+    };
+
+    // DataGrid state (server-side pagination)
+    const [dataGridPagination, setDataGridPagination] = useState({
+        page: 0,
+        pageSize: 10,
+        totalRows: 100, // Simulate 100 total rows
+    });
+
+    const [dataGridSort, setDataGridSort] = useState({
+        field: 'name',
+        direction: 'asc' as 'asc' | 'desc',
+    });
+
+    // DataGrid sample data (simulating server-side)
+    const generateDataGridRows = () => {
+        const start = dataGridPagination.page * dataGridPagination.pageSize;
+        const end = start + dataGridPagination.pageSize;
+        return Array.from({ length: dataGridPagination.pageSize }, (_, i) => ({
+            id: start + i + 1,
+            name: `User ${start + i + 1}`,
+            email: `user${start + i + 1}@example.com`,
+            role: ['Admin', 'User', 'Manager'][Math.floor(Math.random() * 3)],
+            status: Math.random() > 0.5 ? 'Active' : 'Inactive',
+        }));
+    };
+
+    const dataGridRows = generateDataGridRows();
+
+    const dataGridColumns = [
+        { id: 'id', label: 'ID', minWidth: 70, sortable: true },
+        { id: 'name', label: 'Name', minWidth: 170, sortable: true },
+        { id: 'email', label: 'Email', minWidth: 200, sortable: true },
+        { id: 'role', label: 'Role', minWidth: 120 },
+        {
+            id: 'status',
+            label: 'Status',
+            minWidth: 120,
+            format: (value: string) => (
+                <Chip label={value} status={value === 'Active' ? 'success' : 'default'} size="small" />
+            ),
+        },
+    ];
+
+    // VirtualGrid sample data (large dataset)
+    const virtualGridRows = Array.from({ length: 10000 }, (_, i) => ({
+        id: i + 1,
+        name: `User ${i + 1}`,
+        email: `user${i + 1}@example.com`,
+        department: ['Engineering', 'Marketing', 'Sales', 'HR'][Math.floor(Math.random() * 4)],
+        status: i % 3 === 0 ? 'Active' : 'Inactive',
+    }));
+
+    const virtualGridColumns = [
+        { id: 'id', label: 'ID', width: 80 },
+        { id: 'name', label: 'Name', width: 200 },
+        { id: 'email', label: 'Email', width: 250 },
+        { id: 'department', label: 'Department', width: 150 },
+        {
+            id: 'status',
+            label: 'Status',
+            width: 120,
+            format: (value: string) => (
+                <Chip label={value} status={value === 'Active' ? 'success' : 'default'} size="small" />
+            ),
+        },
+    ];
+
+    const handleDataGridPaginationChange = (page: number, pageSize: number) => {
+        setDataGridPagination({ ...dataGridPagination, page, pageSize });
+        showInfo(`Page changed to ${page + 1}, Page size: ${pageSize}`);
+    };
+
+    const handleDataGridSortChange = (sort: any) => {
+        setDataGridSort(sort);
+        showInfo(`Sorted by ${sort.field} (${sort.direction})`);
     };
 
     return (
@@ -925,6 +1003,177 @@ const ComponentsShowcase: React.FC = () => {
                     />
                 </Paper>
             </Box>
+            {/* DataGrid Section (Server-Side Pagination) */}
+            <Typography variant="h5" gutterBottom>
+                DataGrid (Server-Side Pagination)
+            </Typography>
+            <Paper sx={{ p: 3 }}>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                    DataGrid with server-side pagination, sorting, and loading states. Perfect for large
+                    datasets from APIs.
+                </Typography>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                    This grid simulates server-side pagination. In real usage, it would fetch data from your
+                    API based on page, pageSize, and sort parameters.
+                </Alert>
+                <DataGrid
+                    columns={dataGridColumns}
+                    rows={dataGridRows}
+                    pagination={dataGridPagination}
+                    onPaginationChange={handleDataGridPaginationChange}
+                    onSortChange={handleDataGridSortChange}
+                    onRowClick={(row) => showInfo(`Clicked row: ${row.name}`)}
+                    rowsPerPageOptions={[5, 10, 25, 50]}
+                />
+                <CodeBlock
+                    language="tsx"
+                    code={`// Server-side pagination with sorting
+const [pagination, setPagination] = useState({
+  page: 0,
+  pageSize: 25,
+  totalRows: 0,
+});
+
+const { data, isLoading } = useQuery({
+  queryKey: ['users', pagination.page, pagination.pageSize],
+  queryFn: () => userService.getAll({
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+  }),
+});
+
+<DataGrid
+  columns={[
+    { id: 'name', label: 'Name', sortable: true },
+    { id: 'email', label: 'Email', sortable: true },
+    { 
+      id: 'status', 
+      label: 'Status',
+      format: (value) => <Chip label={value} status={value} />
+    },
+  ]}
+  rows={data?.items || []}
+  loading={isLoading}
+  pagination={{
+    ...pagination,
+    totalRows: data?.total || 0,
+  }}
+  onPaginationChange={(page, pageSize) => 
+    setPagination({ ...pagination, page, pageSize })
+  }
+  onSortChange={(sort) => console.log('Sort:', sort)}
+  onRowClick={(row) => navigate(\`/users/\${row.id}\`)}
+/>`}
+                />
+            </Paper>
+
+            <Typography variant="h5" gutterBottom>
+                VirtualGrid (Client-Side Virtualization)
+            </Typography>
+            <Paper sx={{ p: 3 }}>
+                <Typography variant="body2" color="text.secondary" paragraph>
+                    VirtualGrid with client-side virtualization for rendering large datasets efficiently.
+                    Only visible rows are rendered in the DOM.
+                </Typography>
+                <Alert severity="success" sx={{ mb: 2 }}>
+                    <Typography variant="body2" gutterBottom>
+                        <strong>Performance Demo:</strong> This grid contains 10,000 rows but only renders
+                        visible rows for optimal performance.
+                    </Typography>
+                    <Typography variant="caption">
+                        Try scrolling - notice how smooth it is even with 10,000 rows! Only ~15-20 rows are
+                        rendered at any time.
+                    </Typography>
+                </Alert>
+                <VirtualGrid
+                    columns={virtualGridColumns}
+                    rows={virtualGridRows}
+                    rowHeight={53}
+                    headerHeight={56}
+                    onRowClick={(row) => showInfo(`Clicked: ${row.name}`)}
+                />
+                <CodeBlock
+                    language="tsx"
+                    code={`// Client-side virtualization for large datasets
+const rows = Array.from({ length: 10000 }, (_, i) => ({
+  id: i + 1,
+  name: \`User \${i + 1}\`,
+  email: \`user\${i + 1}@example.com\`,
+  status: i % 3 === 0 ? 'Active' : 'Inactive',
+}));
+
+<VirtualGrid
+  columns={[
+    { id: 'id', label: 'ID', width: 80 },
+    { id: 'name', label: 'Name', width: 200 },
+    { id: 'email', label: 'Email', width: 250 },
+    { 
+      id: 'status', 
+      label: 'Status',
+      width: 120,
+      format: (value) => (
+        <Chip label={value} status={value === 'Active' ? 'success' : 'default'} />
+      )
+    },
+  ]}
+  rows={rows}
+  rowHeight={53}
+  headerHeight={56}
+  onRowClick={(row) => handleRowClick(row)}
+/>
+
+// Perfect for:
+// - Reports with thousands of rows
+// - Already-loaded data (not paginated)
+// - Smooth scrolling experience
+// - Memory-efficient rendering`}
+                />
+            </Paper>
+
+            {/* Comparison Section */}
+            <Paper sx={{ p: 3, bgcolor: 'action.hover' }}>
+                <Typography variant="h6" gutterBottom>
+                    📊 When to Use Which Grid?
+                </Typography>
+                <Grid container spacing={3}>
+                    <Grid item xs={12} md={4}>
+                        <Card title="Table" hoverable>
+                            <Typography variant="body2" paragraph>
+                                <strong>Best for:</strong> Simple data display without pagination
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                • Small datasets (&lt; 100 rows)<br />
+                                • Basic formatting needs<br />
+                                • No pagination required
+                            </Typography>
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Card title="DataGrid" hoverable>
+                            <Typography variant="body2" paragraph>
+                                <strong>Best for:</strong> Server-side pagination
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                • Large datasets (millions of rows)<br />
+                                • API-driven data<br />
+                                • Server-side sorting/filtering
+                            </Typography>
+                        </Card>
+                    </Grid>
+                    <Grid item xs={12} md={4}>
+                        <Card title="VirtualGrid" hoverable>
+                            <Typography variant="body2" paragraph>
+                                <strong>Best for:</strong> Client-side large datasets
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                                • 10k-100k rows in memory<br />
+                                • Already-loaded data<br />
+                                • Smooth scrolling experience
+                            </Typography>
+                        </Card>
+                    </Grid>
+                </Grid>
+            </Paper>
 
             {/* Footer */}
             <Box sx={{ mt: 6, p: 3, bgcolor: 'background.paper', borderRadius: 2 }}>
