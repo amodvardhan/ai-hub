@@ -41,14 +41,15 @@ import {
 } from '@mui/icons-material';
 import { useNotification } from '@hooks/useNotification';
 import { QuickReference, CodeBlock } from '../components';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Components Showcase component
  * @returns JSX Element
  */
 const ComponentsShowcase: React.FC = () => {
-    const { showSuccess, showError, showInfo } = useNotification();
-
+    const { showSuccess, showInfo } = useNotification();
+    const navigate = useNavigate();
     // State for various components
     const [loading, setLoading] = useState(false);
     const [textValue, setTextValue] = useState('');
@@ -931,16 +932,9 @@ const ComponentsShowcase: React.FC = () => {
                     Need More Help?
                 </Typography>
                 <Typography variant="body2" color="text.secondary" paragraph>
-                    Check out the complete architecture documentation for more details on:
+                    Check out the complete architecture documentation for more details...
                 </Typography>
-                <Typography variant="body2" component="div">
-                    • Adding new features to the application<br />
-                    • Creating custom wrapper components<br />
-                    • Best practices and coding standards<br />
-                    • Type definitions and interfaces<br />
-                    • Error handling patterns<br />
-                </Typography>
-                <Button variant="outlined" sx={{ mt: 2 }}>
+                <Button variant="outlined" onClick={() => navigate('/docs')}>
                     View Architecture Documentation
                 </Button>
             </Box>

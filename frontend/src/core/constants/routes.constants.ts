@@ -10,6 +10,7 @@ export const ROUTES = {
     PROFILE: '/profile',
     SETTINGS: '/settings',
     SHOWCASE: '/showcase',
+    DOCS: '/docs',
     UNAUTHORIZED: '/unauthorized',
     NOT_FOUND: '*',
 } as const;
