@@ -5,12 +5,15 @@
 import React from 'react';
 import { Card, Alert } from '@components/wrappers';
 import { Typography, Box, List, ListItem, ListItemText } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 /**
  * Quick Reference component
  * @returns JSX Element
  */
 export const QuickReference: React.FC = () => {
+    const theme = useTheme();
+
     return (
         <Card title="🚀 Developer Quick Reference" subtitle="Best Practices & Tips">
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -18,9 +21,19 @@ export const QuickReference: React.FC = () => {
                     <Typography variant="subtitle2" gutterBottom>
                         📦 Import Pattern
                     </Typography>
-                    <Typography variant="caption" component="pre" sx={{ bgcolor: 'grey.900', color: 'white', p: 1, borderRadius: 1 }}>
-                        {`import { Button, TextField, Select } from '@components/wrappers';`}
-                    </Typography>
+                    <Box
+                        sx={{
+                            bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.800',
+                            color: theme.palette.mode === 'dark' ? 'grey.100' : 'white',
+                            p: 1,
+                            borderRadius: 1,
+                            fontFamily: 'monospace',
+                        }}
+                    >
+                        <Typography variant="caption" component="pre" sx={{ m: 0 }}>
+                            {`import { Button, TextField, Select } from '@components/wrappers';`}
+                        </Typography>
+                    </Box>
                 </Alert>
 
                 <Alert severity="success">
@@ -31,13 +44,39 @@ export const QuickReference: React.FC = () => {
                         <ListItem>
                             <ListItemText
                                 primary="Always use TypeScript types for state"
-                                secondary="const [value, setValue] = useState<string>('');"
+                                secondary={
+                                    <Typography
+                                        variant="caption"
+                                        component="code"
+                                        sx={{
+                                            bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.200',
+                                            p: 0.5,
+                                            borderRadius: 0.5,
+                                            fontFamily: 'monospace',
+                                        }}
+                                    >
+                                        const [value, setValue] = useState&lt;string&gt;('');
+                                    </Typography>
+                                }
                             />
                         </ListItem>
                         <ListItem>
                             <ListItemText
                                 primary="Use proper event handler types"
-                                secondary="onChange: (e: React.ChangeEvent<HTMLInputElement>) => void"
+                                secondary={
+                                    <Typography
+                                        variant="caption"
+                                        component="code"
+                                        sx={{
+                                            bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.200',
+                                            p: 0.5,
+                                            borderRadius: 0.5,
+                                            fontFamily: 'monospace',
+                                        }}
+                                    >
+                                        onChange: (e: React.ChangeEvent&lt;HTMLInputElement&gt;) =&gt; void
+                                    </Typography>
+                                }
                             />
                         </ListItem>
                     </List>
@@ -48,7 +87,7 @@ export const QuickReference: React.FC = () => {
                         ⚡ Loading & Async Operations
                     </Typography>
                     <Typography variant="body2">
-                        • Use the built-in <code>loading</code> prop for async operations<br />
+                        • Use the built-in <Typography component="code" sx={{ bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.200', px: 0.5, borderRadius: 0.5 }}>loading</Typography> prop for async operations<br />
                         • Show loading indicators during data fetching<br />
                         • Disable interactive elements while loading
                     </Typography>
@@ -59,13 +98,20 @@ export const QuickReference: React.FC = () => {
                         🛡️ Error Handling & Validation
                     </Typography>
                     <Typography variant="body2">
-                        • Always provide <code>error</code> and <code>helperText</code> props for form validation<br />
+                        • Always provide <Typography component="code" sx={{ bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.200', px: 0.5, borderRadius: 0.5 }}>error</Typography> and <Typography component="code" sx={{ bgcolor: theme.palette.mode === 'dark' ? 'grey.800' : 'grey.200', px: 0.5, borderRadius: 0.5 }}>helperText</Typography> props for form validation<br />
                         • Use Formik + Yup for complex form validation<br />
                         • Display user-friendly error messages
                     </Typography>
                 </Alert>
 
-                <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+                <Box
+                    sx={{
+                        p: 2,
+                        bgcolor: theme.palette.mode === 'dark' ? 'grey.900' : 'grey.100',
+                        borderRadius: 1,
+                        border: `1px solid ${theme.palette.divider}`,
+                    }}
+                >
                     <Typography variant="subtitle2" gutterBottom>
                         📖 Quick Tips
                     </Typography>
