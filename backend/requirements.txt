@@ -18,3 +18,16 @@ email-validator==2.2.0
 
 # Logging
 loguru==0.7.2
+
+# AI/GenAI
+openai==1.54.0
+tiktoken==0.8.0
+tenacity==9.0.0
+
+# Document Processing
+PyPDF2==3.0.1
+python-docx==1.1.2
+
+# Optional: For advanced features
+# langchain==0.3.7
+# chromadb==0.5.23  # Vector DB for RAG

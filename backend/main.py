@@ -1,5 +1,6 @@
 """
 AI Hub - Main Application
+Enterprise GenAI Applications
 """
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
@@ -13,9 +14,8 @@ from core.middleware import setup_middleware
 
 # Import routers
 from shared.services.auth_service import router as auth_router
-from projects.chat.routes import router as chat_router
-from projects.document_analysis.routes import router as document_router
-from projects.vision.routes import router as vision_router
+from projects.rfp_evaluation.routes import router as rfp_router
+from projects.report_generation.routes import router as report_router
 
 # Setup logging
 logger.remove()
@@ -31,21 +31,34 @@ logger.add("logs/app.log", rotation="500 MB", retention="30 days", level=setting
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifecycle"""
-    logger.info("🚀 Starting AI Hub...")
+    logger.info("🚀 Starting AI Hub - Enterprise GenAI Platform")
     await init_database()
-    logger.info(f"AI Hub started - Environment: {settings.ENVIRONMENT}")
-    logger.info(f"API Docs: http://{settings.HOST}:{settings.PORT}/docs")
+    logger.info(f"✅ Environment: {settings.ENVIRONMENT}")
+    logger.info(f"📝 API Docs: http://{settings.HOST}:{settings.PORT}/docs")
+    logger.info("📊 Applications: RFP Evaluation, Report Generation")
     yield
-    logger.info("Shutting down AI Hub...")
+    logger.info("🛑 Shutting down AI Hub...")
     await close_database()
-    logger.info("Shutdown complete")
+    logger.info("✅ Shutdown complete")
 
 
 # Create app
 app = FastAPI(
-    title=settings.APP_NAME,
+    title="AI Hub - Enterprise GenAI Platform",
     version=settings.APP_VERSION,
-    description="AI Hub with Multiple AI Applications",
+    description="""
+    Enterprise-grade GenAI applications for business automation.
+    
+    **Current Applications:**
+    - RFP Evaluation: AI-powered RFP analysis and scoring
+    - Report Generation: Automated report creation (Coming Soon)
+    
+    **Features:**
+    - Multi-tenant support
+    - Enterprise security
+    - Usage tracking
+    - Audit logging
+    """,
     lifespan=lifespan,
     docs_url="/docs" if settings.is_development else None,
     redoc_url="/redoc" if settings.is_development else None,
@@ -61,25 +74,37 @@ async def health_check():
     return {
         "status": "healthy",
         "version": settings.APP_VERSION,
-        "environment": settings.ENVIRONMENT
+        "environment": settings.ENVIRONMENT,
+        "applications": ["rfp_evaluation", "report_generation"]
     }
 
 # Root
 @app.get("/")
 async def root():
     return {
-        "message": f"Welcome to {settings.APP_NAME}",
+        "message": "AI Hub - Enterprise GenAI Platform",
         "version": settings.APP_VERSION,
+        "applications": [
+            {
+                "name": "RFP Evaluation",
+                "endpoint": "/api/v1/rfp",
+                "status": "active"
+            },
+            {
+                "name": "Report Generation",
+                "endpoint": "/api/v1/reports",
+                "status": "coming_soon"
+            }
+        ],
         "docs": "/docs" if settings.is_development else None
     }
 
-# Register all projects
+# Register applications
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
-app.include_router(chat_router, prefix="/api/v1/chat", tags=["Chat AI"])
-app.include_router(document_router, prefix="/api/v1/documents", tags=["Document AI"])
-app.include_router(vision_router, prefix="/api/v1/vision", tags=["Vision AI"])
+app.include_router(rfp_router, prefix="/api/v1/rfp", tags=["RFP Evaluation"])
+app.include_router(report_router, prefix="/api/v1/reports", tags=["Report Generation"])
 
-logger.info("All projects registered")
+logger.info("✅ All applications registered")
 
 
 if __name__ == "__main__":
